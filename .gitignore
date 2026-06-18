@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and logs
+.pytest_cache/
+.ipynb_checkpoints/
+*.log
+
+# Project results and local artifacts
+results/
+swissadme_cache/
+failed_structures.txt
+skipped_drugs.txt
+
+# Excel backup files
+~$*.xlsx
