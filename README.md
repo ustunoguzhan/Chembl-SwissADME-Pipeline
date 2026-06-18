@@ -1,6 +1,6 @@
-# ChEMBL-SwissADME Drug Repurposing Pipeline
+# ChEMBL-SwissADME BBB Permeability Pipeline
 
-An open-source Python tool to automate drug repurposing workflows. It takes a list of drug names, queries their canonical SMILES strings from the ChEMBL API, and evaluates their Blood-Brain Barrier (BBB/KBB) permeability via SIB's SwissADME web tool.
+An open-source Python tool to automate the retrieval of SMILES strings and the evaluation of Blood-Brain Barrier (BBB/KBB) permeability. It takes a list of compound or drug names, queries their canonical SMILES strings from the ChEMBL API, and evaluates their BBB permeability via SIB's SwissADME web tool.
 
 This pipeline features a **self-healing, error-tolerant scraping algorithm** specifically designed to overcome the strict structural limitations and rate-limiting bugs of the SwissADME web server.
 
@@ -38,41 +38,3 @@ This ensures a near-100% completion rate for healthy candidates while isolating 
 git clone https://github.com/YOUR_USERNAME/Chembl-SwissADME-Pipeline.git
 cd Chembl-SwissADME-Pipeline
 pip install -r requirements.txt
-```
-
-### 2. Run the pipeline with the sample dataset
-```bash
-python src/pipeline.py --input data/sample_drugs.xlsx --out-dir results --batch-size 20 --sleep 15
-```
-
-### Options
-*   `--input`: Path to input Excel or CSV file. It must contain a `Drug_Name` column. If a `SMILES` column is already present, the pipeline will skip the ChEMBL API step for those drugs.
-*   `--out-dir`: Folder path to save the Excel reports.
-*   `--batch-size`: Batch size for SwissADME queries (default: 20). Lower sizes reduce recursive steps if a failure occurs.
-*   `--sleep`: Sleep time in seconds between batches to respect SIB SwissADME rate limits (default: 15s).
-
----
-
-## 📁 Project Structure
-
-*   `src/chembl_helper.py`: Connects to EBI ChEMBL REST API to fetch SMILES codes by preferred name or synonyms.
-*   `src/swissadme_scraper.py`: Handles connection, Regex parsing of results, and the self-healing adaptive batch split logic.
-*   `src/pipeline.py`: Orchestrates the entire workflow from input reading to ChEMBL querying, SwissADME scraping, filtering, and report generation.
-*   `data/sample_drugs.xlsx`: A test list of 12 drugs:
-    *   **BBB+ controls:** *Citalopram, Diazepam, Fluoxetine, Ibuprofen*
-    *   **BBB- controls:** *Afatinib, Azacitidine, Metformin, Penicillin G*
-    *   **Server crashers (isolated automatically):** *Sirolimus, Everolimus, Amphotericin B, Dactinomycin*
-
----
-
-## 📊 Output Reports
-
-The pipeline generates the following reports in your output directory:
-*   `predictions_full.xlsx`: The complete set of 49 chemical, physical, and ADME properties computed by SwissADME for all successful drugs.
-*   `predictions_bbb_permeant.xlsx`: A filtered list containing only the candidates that pass the blood-brain barrier (`BBB permeant == Yes`).
-*   `failed_molecules.txt`: A list of names and SMILES of the massive macrocycles/compounds that failed to process (isolated by the self-healing algorithm).
-
----
-
-## ⚖️ License
-This project is licensed under the MIT License.
