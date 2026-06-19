@@ -1,16 +1,16 @@
-# ChEMBL-SwissADME BBB Permeability and ADME Pipeline
+# ChEMBL-SwissADME Drug Profiling and ADME Pipeline
 
-An open-source Python tool to automate the retrieval of canonical SMILES strings, execute automated Blood-Brain Barrier (BBB) permeability filtering, and generate hierarchical ADME prediction reports. 
+An open-source Python tool to automate the retrieval of canonical SMILES strings, execute automated Gastrointestinal (GI) absorption and Blood-Brain Barrier (BBB) permeability filtering, and generate hierarchical ADME prediction reports for a list of chemical compounds.
 
 This pipeline features a **self-healing, error-tolerant scraping algorithm** specifically designed to bypass SIB SwissADME web server rate limits and calculation crashes, combined with automated **salt stripping** and **MultiIndex column grouping** for structured reports.
 
 ---
 
-## 📌 1. What Does This Repository Do? (Bu Repo Ne İşe Yarar?)
+## 📌 1. What Does This Repository Do?
 
-When conducting virtual screening or drug repurposing for central nervous system (CNS) diseases like Glioblastoma, evaluating a large library of compounds for blood-brain barrier permeability is crucial. However, querying public databases manually is slow, and SwissADME's bulk interface has server-side bugs and limitations.
+Evaluating a library of candidate compounds for pharmacokinetic properties is a core step in early drug discovery and development. This repository automates the workflow for checking how drugs behave in terms of absorption and distribution, specifically emphasizing **Gastrointestinal (GI) absorption** (for oral bioavailability) and **Blood-Brain Barrier (BBB) permeability** (for brain penetrance).
 
-This repository automates the entire process:
+The tool automates the following steps:
 1. **Identifier Resolution:** Takes a list of drug/compound names and queries EBI's ChEMBL API to retrieve their canonical SMILES strings and ChEMBL IDs.
 2. **Salt & Solvate Stripping:** Automatically parses SMILES strings and strips salts/solvates (e.g., `.HCl`, `.Na`, `.OCCO` solvates) by selecting the largest molecular component. This prevents SwissADME calculations from crashing due to multi-component SMILES.
 3. **Automated Querying:** Submits molecules in batches to the SIB SwissADME web tool using formatted CRLF line endings.
@@ -19,7 +19,7 @@ This repository automates the entire process:
 
 ---
 
-## 📥 2. Input Data Format (Girdi Verisi Nasıl Olmalı?)
+## 📥 2. Input Data Format
 
 The pipeline accepts both Excel (`.xlsx`, `.xls`) and CSV (`.csv`) files.
 
@@ -36,7 +36,7 @@ The pipeline accepts both Excel (`.xlsx`, `.xls`) and CSV (`.csv`) files.
 
 ---
 
-## 📤 3. Output Data Format (Çıktı Verisi Nasıl Bir Formattta Alınacak?)
+## 📤 3. Output Data Format
 
 The pipeline outputs Excel (`.xlsx`) files inside the specified output directory (`results/` by default). The tables are formatted with **MultiIndex (double-level) column headers**, grouping all 40+ SwissADME parameters into logical categories:
 
@@ -52,7 +52,7 @@ The pipeline outputs Excel (`.xlsx`) files inside the specified output directory
 | **Physicochemical Properties** | Molecular Weight (MW), Heavy Atoms, Fraction Csp3, Rotatable Bonds, TPSA |
 | **Lipophilicity** | iLOGP, XLOGP3, WLOGP, MLOGP, Consensus Log P |
 | **Water Solubility** | Ali Log S, ESOL Log S, Solubility classes, Solubilities in mg/ml and mol/l |
-| **Pharmacokinetics (ADME)** | GI Absorption, BBB Permeability, P-gp Substrate, CYP1A2/2C19/2C9/2D6/3A4 Inhibitors, Skin Permeation (log Kp) |
+| **Pharmacokinetics (ADME)** | **GI Absorption** (High/Low), **BBB Permeant** (Yes/No), P-gp Substrate, CYP1A2/2C19/2C9/2D6/3A4 Inhibitors, Skin Permeation (log Kp) |
 | **Drug-likeness** | Lipinski, Ghose, Veber, Egan, Muegge rule violations, Bioavailability Score |
 | **Medicinal Chemistry** | PAINS alerts, Brenk alerts, Lead-likeness violations, Synthetic Accessibility (SA Score) |
 
