@@ -4,6 +4,93 @@ import pandas as pd
 from chembl_helper import ChEMBLHelper
 from swissadme_scraper import SwissADMEScraper
 
+COLUMNS_GROUPING = {
+    # Molecule Info
+    'Molecule': ('Molecule Info', 'Molecule'),
+    'Canonical SMILES': ('Molecule Info', 'Canonical SMILES'),
+    'Formula': ('Molecule Info', 'Formula'),
+    'ChEMBL_ID': ('Molecule Info', 'ChEMBL ID'),
+    'Drug_Name': ('Molecule Info', 'Drug Name'),
+    'SMILES': ('Molecule Info', 'SMILES'),
+    
+    # Physicochemical Properties
+    'MW': ('Physicochemical Properties', 'Molecular Weight'),
+    '#Heavy atoms': ('Physicochemical Properties', 'Heavy Atoms'),
+    '#Aromatic heavy atoms': ('Physicochemical Properties', 'Aromatic Heavy Atoms'),
+    'Fraction Csp3': ('Physicochemical Properties', 'Fraction Csp3'),
+    '#Rotatable bonds': ('Physicochemical Properties', 'Rotatable Bonds'),
+    '#H-bond acceptors': ('Physicochemical Properties', 'H-bond Acceptors'),
+    '#H-bond donors': ('Physicochemical Properties', 'H-bond Donors'),
+    'MR': ('Physicochemical Properties', 'Molar Refractivity'),
+    'TPSA': ('Physicochemical Properties', 'TPSA'),
+    
+    # Lipophilicity
+    'iLOGP': ('Lipophilicity', 'iLOGP'),
+    'XLOGP3': ('Lipophilicity', 'XLOGP3'),
+    'WLOGP': ('Lipophilicity', 'WLOGP'),
+    'MLOGP': ('Lipophilicity', 'MLOGP'),
+    'Silicos-IT Log P': ('Lipophilicity', 'Silicos-IT Log P'),
+    'Consensus Log P': ('Lipophilicity', 'Consensus Log P'),
+    
+    # Water Solubility
+    'ESOL Log S': ('Water Solubility', 'ESOL Log S'),
+    'ESOL Solubility (mg/ml)': ('Water Solubility', 'ESOL Solubility (mg/ml)'),
+    'ESOL Solubility (mol/l)': ('Water Solubility', 'ESOL Solubility (mol/l)'),
+    'ESOL Class': ('Water Solubility', 'ESOL Class'),
+    'Ali Log S': ('Water Solubility', 'Ali Log S'),
+    'Ali Solubility (mg/ml)': ('Water Solubility', 'Ali Solubility (mg/ml)'),
+    'Ali Solubility (mol/l)': ('Water Solubility', 'Ali Solubility (mol/l)'),
+    'Ali Class': ('Water Solubility', 'Ali Class'),
+    'Silicos-IT LogSw': ('Water Solubility', 'Silicos-IT LogSw'),
+    'Silicos-IT Solubility (mg/ml)': ('Water Solubility', 'Silicos-IT Solubility (mg/ml)'),
+    'Silicos-IT Solubility (mol/l)': ('Water Solubility', 'Silicos-IT Solubility (mol/l)'),
+    'Silicos-IT class': ('Water Solubility', 'Silicos-IT Class'),
+    
+    # Pharmacokinetics (ADME)
+    'GI absorption': ('Pharmacokinetics (ADME)', 'GI Absorption'),
+    'BBB permeant': ('Pharmacokinetics (ADME)', 'BBB Permeant'),
+    'Pgp substrate': ('Pharmacokinetics (ADME)', 'P-gp Substrate'),
+    'CYP1A2 inhibitor': ('Pharmacokinetics (ADME)', 'CYP1A2 Inhibitor'),
+    'CYP2C19 inhibitor': ('Pharmacokinetics (ADME)', 'CYP2C19 Inhibitor'),
+    'CYP2C9 inhibitor': ('Pharmacokinetics (ADME)', 'CYP2C9 Inhibitor'),
+    'CYP2D6 inhibitor': ('Pharmacokinetics (ADME)', 'CYP2D6 Inhibitor'),
+    'CYP3A4 inhibitor': ('Pharmacokinetics (ADME)', 'CYP3A4 Inhibitor'),
+    'log Kp (cm/s)': ('Pharmacokinetics (ADME)', 'Skin Permeation (log Kp)'),
+    'BBB_Permeant': ('Pharmacokinetics (ADME)', 'BBB Permeant'),
+    'GI_Absorption': ('Pharmacokinetics (ADME)', 'GI Absorption'),
+    
+    # Drug-likeness
+    'Lipinski #violations': ('Drug-likeness', 'Lipinski Violations'),
+    'Ghose #violations': ('Drug-likeness', 'Ghose Violations'),
+    'Veber #violations': ('Drug-likeness', 'Veber Violations'),
+    'Egan #violations': ('Drug-likeness', 'Egan Violations'),
+    'Muegge #violations': ('Drug-likeness', 'Muegge Violations'),
+    'Bioavailability Score': ('Drug-likeness', 'Bioavailability Score'),
+    
+    # Medicinal Chemistry
+    'PAINS #alerts': ('Medicinal Chemistry', 'PAINS Alerts'),
+    'Brenk #alerts': ('Medicinal Chemistry', 'Brenk Alerts'),
+    'Leadlikeness #violations': ('Medicinal Chemistry', 'Lead-likeness Violations'),
+    'Synthetic Accessibility': ('Medicinal Chemistry', 'Synthetic Accessibility')
+}
+
+def format_excel_grouped(df, index_col):
+    """
+    Groups DataFrame columns under MultiIndex headers and sets the key column as the index.
+    """
+    df_copy = df.copy()
+    if index_col in df_copy.columns:
+        df_copy.set_index(index_col, inplace=True)
+    
+    multi_cols = []
+    for col in df_copy.columns:
+        if col in COLUMNS_GROUPING:
+            multi_cols.append(COLUMNS_GROUPING[col])
+        else:
+            multi_cols.append(('Other Info', col))
+    df_copy.columns = pd.MultiIndex.from_tuples(multi_cols)
+    return df_copy
+
 def parse_args():
     parser = argparse.ArgumentParser(description="ChEMBL SMILES retrieval and SwissADME BBB Permeability Pipeline")
     parser.add_argument("--input", type=str, default="data/sample_drugs.xlsx", help="Path to input Excel file containing drug list")
@@ -84,12 +171,7 @@ def main():
     # Step 4: Map predictions and save outputs
     print("\n[Step 4]: Generating pipeline reports...")
     
-    # Save full predictions to file
-    predictions_path = os.path.join(args.out_dir, "predictions_full.xlsx")
-    predictions_df.to_excel(predictions_path, index=False)
-    print(f"  Saved full ADME predictions to: {predictions_path}")
-    
-    # Map back to original dataset
+    # Map back to original dataset (do mapping while flat to avoid KeyError)
     predictions_df['Drug_Name_Lower'] = predictions_df['Molecule'].astype(str).str.replace("_", " ").str.lower()
     bbb_mapping = dict(zip(predictions_df['Drug_Name_Lower'], predictions_df['BBB permeant']))
     gi_mapping = dict(zip(predictions_df['Drug_Name_Lower'], predictions_df['GI absorption']))
@@ -99,13 +181,21 @@ def main():
     resolved_df['GI_Absorption'] = resolved_df['Drug_Name_Lower'].map(gi_mapping)
     resolved_df.drop(columns=['Drug_Name_Lower'], inplace=True)
     
+    # Group and Save full predictions to file (using Molecule as Excel index)
+    save_pred_df = predictions_df.drop(columns=['Drug_Name_Lower']).copy()
+    grouped_pred_df = format_excel_grouped(save_pred_df, 'Molecule')
+    predictions_path = os.path.join(args.out_dir, "predictions_full.xlsx")
+    grouped_pred_df.to_excel(predictions_path, index=True)
+    print(f"  Saved full ADME predictions (grouped) to: {predictions_path}")
+    
     # Filter for KBB (BBB) permeant == Yes
     filtered_bbb_df = resolved_df[resolved_df['BBB_Permeant'].astype(str).str.lower() == 'yes'].copy()
     
-    # Save outputs
+    # Group and Save BBB Permeant (BBB+) drugs to file (using Drug_Name as Excel index)
+    grouped_bbb_df = format_excel_grouped(filtered_bbb_df, 'Drug_Name')
     bbb_path = os.path.join(args.out_dir, "predictions_bbb_permeant.xlsx")
-    filtered_bbb_df.to_excel(bbb_path, index=False)
-    print(f"  Saved BBB Permeant (BBB+) drugs to: {bbb_path}")
+    grouped_bbb_df.to_excel(bbb_path, index=True)
+    print(f"  Saved BBB Permeant (BBB+) drugs (grouped) to: {bbb_path}")
     
     # Save failed/skipped drugs log
     if scraper.failed_drugs:
