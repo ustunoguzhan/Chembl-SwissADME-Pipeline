@@ -4,6 +4,10 @@ import requests
 import pandas as pd
 from io import StringIO
 
+from rdkit import Chem
+from rdkit.Chem.MolStandardize import rdMolStandardize
+from rdkit.Chem import SaltRemover
+
 class SwissADMEScraper:
     """
     A robust web scraper for the SIB SwissADME tool. 
@@ -29,13 +33,31 @@ class SwissADMEScraper:
         """
         smiles_lines = []
         for name, smiles in batch_items:
-            # Salt Stripping: Select the largest molecular fragment if multiple components exist
             clean_smiles = smiles
-            if smiles and isinstance(smiles, str) and '.' in smiles:
-                parts = smiles.split('.')
-                clean_smiles = max(parts, key=len)
-                print(f"    [Salt Stripping]: Stripped salts/solvates from '{name}' SMILES: '{smiles}' -> '{clean_smiles}'")
-                
+            if smiles and isinstance(smiles, str):
+                try:
+                    mol = Chem.MolFromSmiles(smiles)
+                    if mol is not None:
+                        # 1. Strip common salts and solvates
+                        remover = SaltRemover.SaltRemover()
+                        stripped = remover.StripMol(mol)
+                        if stripped is not None and stripped.GetNumAtoms() > 0:
+                            mol = stripped
+                            
+                        # 2. Keep largest organic fragment
+                        mol = rdMolStandardize.FragmentParent(mol)
+                        
+                        # 3. Neutralize charges
+                        uncharger = rdMolStandardize.Uncharger()
+                        mol = uncharger.uncharge(mol)
+                        
+                        if mol:
+                            clean_smiles = Chem.MolToSmiles(mol, canonical=True)
+                            if clean_smiles != smiles:
+                                print(f"    [RDKit Standardization]: Cleaned '{name}' SMILES: '{smiles}' -> '{clean_smiles}'")
+                except Exception as e:
+                    print(f"    [RDKit Warning]: Standardization failed for '{name}' SMILES '{smiles}': {e}")
+                    
             clean_name = name.replace(" ", "_")
             smiles_lines.append(f"{clean_smiles} {clean_name}")
             

@@ -1,3 +1,4 @@
 requests>=2.25.0
 pandas>=1.2.0
 openpyxl>=3.0.0
+rdkit>=2022.03.1
