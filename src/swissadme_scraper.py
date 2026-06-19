@@ -29,8 +29,15 @@ class SwissADMEScraper:
         """
         smiles_lines = []
         for name, smiles in batch_items:
+            # Salt Stripping: Select the largest molecular fragment if multiple components exist
+            clean_smiles = smiles
+            if smiles and isinstance(smiles, str) and '.' in smiles:
+                parts = smiles.split('.')
+                clean_smiles = max(parts, key=len)
+                print(f"    [Salt Stripping]: Stripped salts/solvates from '{name}' SMILES: '{smiles}' -> '{clean_smiles}'")
+                
             clean_name = name.replace(" ", "_")
-            smiles_lines.append(f"{smiles} {clean_name}")
+            smiles_lines.append(f"{clean_smiles} {clean_name}")
             
         # SwissADME specifically requires CRLF line endings to parse text areas correctly
         smiles_input = "\r\n".join(smiles_lines)
@@ -41,8 +48,27 @@ class SwissADMEScraper:
             try:
                 r = requests.post(self.url, data=payload, headers=self.headers, timeout=self.request_timeout)
                 if r.status_code == 200:
-                    # Find all matches of JavaScript clipboard variable concat
+                    # 1. Primary parsing: Look for the specific 'textForClipBoard' variable
                     matches = re.findall(r'textForClipBoard\s*=\s*textForClipBoard\s*\+\s*(.*?);', r.text, re.DOTALL)
+                    
+                    # 2. Robust Fallback: If variable is renamed, look for any self-concatenating variable
+                    if not matches:
+                        # Find all patterns of varname = varname + ...;
+                        var_matches = re.findall(r'([a-zA-Z0-9_]+)\s*=\s*\1\s*\+\s*(.*?);', r.text, re.DOTALL)
+                        # Filter to find the variable accumulating the CSV contents
+                        for var_name, content in var_matches:
+                            if "Molecule" in content or "SMILES" in content or "GI absorption" in content:
+                                # Found the clipboard variable! Retrieve all its occurrences
+                                matches = re.findall(rf'{var_name}\s*=\s*{var_name}\s*\+\s*(.*?);', r.text, re.DOTALL)
+                                if matches:
+                                    print(f"    [Scraper Alert]: Detected renamed clipboard variable: '{var_name}'")
+                                    break
+                                    
+                    # 3. Informative error logging if all extraction methods fail
+                    if not matches:
+                        print("    [Scraper Error]: Failed to locate clipboard variable (e.g. 'textForClipBoard') in HTML script tags.")
+                        print("    [Troubleshooting]: The SwissADME web page structure might have changed. Please verify the response script content.")
+                        
                     if len(matches) > 1:
                         # Extract the comma-separated text blocks
                         batch_rows = []
